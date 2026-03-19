@@ -6,7 +6,7 @@ on:
       prompt:
         description: "Prompt for Claude"
         required: false
-        default: "Say hello and confirm Azure authentication is working."
+        default: "Say hello and confirm you are working."
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -40,6 +40,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
 
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
