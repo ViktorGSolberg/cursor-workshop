@@ -8,6 +8,7 @@ on:
 jobs:
   analyze-exceptions:
     runs-on: ubuntu-latest
+    environment: jira-github-workflow-p
     permissions:
       contents: read
       issues: write
@@ -32,7 +33,7 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         env:
-          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_FOUNDRY_API_KEY }}
           github_token: ${{ github.token }}
