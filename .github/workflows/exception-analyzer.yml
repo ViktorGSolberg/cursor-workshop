@@ -36,7 +36,9 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_FOUNDRY_API_KEY }}
           github_token: ${{ github.token }}
-          claude_args: "--dangerously-skip-permissions"
+          claude_args: |
+            --model claude-sonnet-4-6
+            --dangerously-skip-permissions
           prompt: |
             You are an SRE analyzing application exceptions. Here is the exception data from the last 24 hours from Azure Log Analytics:
 
