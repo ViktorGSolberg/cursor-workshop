@@ -22,16 +22,13 @@ jobs:
           client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
           auth-type: SERVICE_PRINCIPAL
 
-      - name: Query exceptions from Log Analytics
-        id: query
+      - name: Login with Azure CLI
         run: |
-          RESULT=$(az monitor log-analytics query \
-            --workspace "a53c2ee0-9900-4756-b9c1-ab1b96a28d87" \
-            --analytics-query "exceptions | where timestamp > ago(24h) | summarize Count=count(), LatestOccurrence=max(timestamp), EarliestOccurrence=min(timestamp) by problemId, type, outerMessage | top 2 by Count desc" \
-            --output json)
-          echo "result<<EOF" >> $GITHUB_OUTPUT
-          echo "$RESULT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          az login --service-principal \
+            -u "$AZURE_CLIENT_ID" \
+            -p "$AZURE_CLIENT_SECRET" \
+            --tenant "$AZURE_TENANT_ID"
+          az account set --subscription "$AZURE_SUBSCRIPTION_ID"
 
       - name: Checkout repository
         uses: actions/checkout@v4
