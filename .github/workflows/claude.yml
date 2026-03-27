@@ -1,36 +1,53 @@
-name: Claude Code
+name: Claude Code (API Key)
 
 on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Prompt for Claude"
+        required: false
+        default: "Say hello and confirm you are working."
   issue_comment:
     types: [created]
+  pull_request_review_comment:
+    types: [created]
   issues:
-    types: [opened]
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   claude:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && github.event.issue.pull_request == null) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    concurrency:
+      group: claude-apikey-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
+    environment: jira-github-workflow-p
     permissions:
       contents: write
-      issues: write
       pull-requests: write
-    env:
-      ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+      issues: write
+      id-token: write
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
         with:
-          trigger_phrase: "@claude"
           anthropic_api_key: ${{ secrets.ANTHROPIC_FOUNDRY_API_KEY }}
-          github_token: ${{ github.token }}
-          claude_args: "--dangerously-skip-permissions"
-          prompt: |
-            Analyze the issue context and implement the requested changes.
-            Create a pull request with your implementation that addresses the issue.
-            Reference the issue number in the PR description.
-            After creating the PR, post a comment on the issue with the PR link and a nice, respectful message such as "Here is a PR, my lord".
+          claude_args: |
+            --model claude-sonnet-4-6
+            --dangerously-skip-permissions
+          prompt: ${{ github.event.inputs.prompt }}
