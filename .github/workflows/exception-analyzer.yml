@@ -27,13 +27,6 @@ jobs:
             --tenant "$AZURE_TENANT_ID"
           az account set --subscription "$AZURE_SUBSCRIPTION_ID"
 
-      - name: Query exceptions from Log Analytics
-        run: |
-          az monitor log-analytics query \
-            --workspace "a53c2ee0-9900-4756-b9c1-ab1b96a28d87" \
-            --analytics-query "exceptions | where timestamp > ago(24h) | summarize Count=count(), LatestOccurrence=max(timestamp), EarliestOccurrence=min(timestamp) by problemId, type, outerMessage | top 2 by Count desc" \
-            --output json > /tmp/exceptions.json
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -41,7 +34,6 @@ jobs:
         uses: anthropics/claude-code-action@v1
         env:
           ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
-          GH_REPO: ${{ github.repository }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_FOUNDRY_API_KEY }}
           github_token: ${{ github.token }}
@@ -49,17 +41,15 @@ jobs:
             --model claude-sonnet-4-6
             --dangerously-skip-permissions
           prompt: |
-            You are an SRE analyzing application exceptions.
+            You are an SRE analyzing application exceptions. Here is the exception data from the last 24 hours from Azure Log Analytics:
 
-            Run this command to get the exception data: cat /tmp/exceptions.json
+            ${{ steps.query.outputs.result }}
 
-            Analyze the exceptions and use the `gh` CLI to create a GitHub issue in the ${{ github.repository }} repository with:
-            - Title: "Exception Report - <today's date>"
-            - Body summarizing:
-              - The top exceptions by count
-              - Severity assessment
-              - Possible root causes
-              - Recommended actions
+            Analyze the exceptions and create a GitHub issue summarizing:
+            - The top exceptions by count
+            - Severity assessment
+            - Possible root causes
+            - Recommended actions
 
-            Use this command to create the issue:
-            gh issue create --repo ${{ github.repository }} --title "..." --body "..."
+            Title the issue: "Exception Report - <today's date>"
+            Label the issue with "exception-report" if that label exists, otherwise no label.
