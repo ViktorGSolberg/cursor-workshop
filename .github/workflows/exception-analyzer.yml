@@ -1,0 +1,58 @@
+name: Exception Analyzer
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Every hour
+  workflow_dispatch:
+
+jobs:
+  analyze-exceptions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+      - name: Query exceptions from Log Analytics
+        id: query
+        run: |
+          RESULT=$(az monitor log-analytics query \
+            --workspace "a53c2ee0-9900-4756-b9c1-ab1b96a28d87" \
+            --analytics-query "exceptions | where timestamp > ago(24h) | summarize Count=count(), LatestOccurrence=max(timestamp), EarliestOccurrence=min(timestamp) by problemId, type, outerMessage | top 2 by Count desc" \
+            --output json)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_FOUNDRY_API_KEY }}
+          github_token: ${{ github.token }}
+          claude_args: "--dangerously-skip-permissions"
+          prompt: |
+            You are an SRE analyzing application exceptions. Here is the exception data from the last 24 hours from Azure Log Analytics:
+
+            ${{ steps.query.outputs.result }}
+
+            Analyze the exceptions and create a GitHub issue summarizing:
+            - The top exceptions by count
+            - Severity assessment
+            - Possible root causes
+            - Recommended actions
+
+            Title the issue: "Exception Report - <today's date>"
+            Label the issue with "exception-report" if that label exists, otherwise no label.
