@@ -3,12 +3,14 @@ name: Claude Code
 on:
   issue_comment:
     types: [created]
+  issues:
+    types: [opened]
 
 jobs:
   claude:
     if: |
-      contains(github.event.comment.body, '@claude') &&
-      github.event.issue.pull_request == null
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && github.event.issue.pull_request == null) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -23,7 +25,7 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
-          trigger_phrase: "@Claude"
+          trigger_phrase: "@claude"
           anthropic_api_key: ${{ secrets.ANTHROPIC_FOUNDRY_API_KEY }}
           github_token: ${{ github.token }}
           claude_args: "--dangerously-skip-permissions"
