@@ -30,6 +30,11 @@ const HomePage = ({ post }: HomePageProps) => (
       <Layout.Content>
         <Layout.Section padding={{ bottom: Padding.Large }}>
           <h1>Cursor Workshop</h1>
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Steve_Jobs_Headshot_2010-CROP_%28cropped_2%29.jpg/800px-Steve_Jobs_Headshot_2010-CROP_%28cropped_2%29.jpg"
+            alt="Steve Jobs"
+            style={{ width: 200, borderRadius: 8, marginBottom: 16 }}
+          />
           {post ? (
             <>
               <h3>{post.title}</h3>
