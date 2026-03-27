@@ -41,7 +41,10 @@ jobs:
             actions: read
 
           # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+          prompt: |
+            Solve the problem or implement the feature described in the issue.
+            Always create a new branch and open a pull request with your changes.
+            After creating the PR, post a comment on the issue with the link to the PR and a nice, respectful message such as "Here is a PR, my lord".
 
           # Optional: Add claude_args to customize behavior and configuration
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
